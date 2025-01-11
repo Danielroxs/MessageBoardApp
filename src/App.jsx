@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
+import axios from "axios";
 
 const App = () => {
   const [messages, setMessages] = useState([
@@ -16,6 +17,20 @@ const App = () => {
   ]);
 
   const [newMessage, setNewMessage] = useState({ title: "", body: "" });
+
+  // Función para obtener los mensajes desde el backend
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/messages");
+        setMessages(response.data); // Actualiza el estado con los mensajes obtenidos
+      } catch (error) {
+        console.error("Error al obtener los mensajes:", error);
+      }
+    };
+
+    fetchMessages();
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
