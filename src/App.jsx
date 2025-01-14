@@ -3,18 +3,7 @@ import styled from "styled-components";
 import axios from "axios";
 
 const App = () => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      title: "Primer mensaje",
-      body: "Este es el contenido del primer mensaje",
-    },
-    {
-      id: 2,
-      title: "Segundo mensaje",
-      body: "Este es el contenido del segundo mensaje",
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const [newMessage, setNewMessage] = useState({ title: "", body: "" });
 
@@ -32,11 +21,19 @@ const App = () => {
     fetchMessages();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (newMessage.title && newMessage.body) {
-      setMessages([...messages, { ...newMessage, id: messages.length + 1 }]);
-      setNewMessage({ title: "", body: "" });
+      try {
+        const response = await axios.post(
+          "http://localhost:3000/messages",
+          newMessage
+        );
+        setMessages([...messages, response.data]); // Agrega el nuevo mensaje al estado
+        setNewMessage({ title: "", body: "" }); // limpiar el formulario
+      } catch (error) {
+        console.error("Error al agregar el mensaje", error);
+      }
     }
   };
 
