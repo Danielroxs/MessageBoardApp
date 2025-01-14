@@ -37,6 +37,15 @@ const App = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`http://localhost:3000/messages/${id}`);
+      setMessages(messages.filter((msg) => msg.id !== id)); // Actualiza el estado eliminando el mensaje
+    } catch (error) {
+      console.error("Error al eliminar el mensaje:", error);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewMessage({ ...newMessage, [name]: value });
@@ -50,6 +59,9 @@ const App = () => {
           <MessageCard key={msg.id}>
             <h3>{msg.title}</h3>
             <p>{msg.body}</p>
+            <DeleteButton onClick={() => handleDelete(msg.id)}>
+              Eliminar
+            </DeleteButton>
           </MessageCard>
         ))}
       </MessageList>
@@ -104,6 +116,24 @@ const MessageCard = styled.div`
   border-radius: 8px;
   background-color: #3a3f47;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  position: relative;
+`;
+
+const DeleteButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #ff4d4d;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #ff1a1a;
+  }
 `;
 
 const Form = styled.form`
