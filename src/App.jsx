@@ -4,8 +4,9 @@ import axios from "axios";
 
 const App = () => {
   const [messages, setMessages] = useState([]);
-
   const [newMessage, setNewMessage] = useState({ title: "", body: "" });
+  const [isEditing, setIsEditing] = useState(false); // Estado para saber si estamos editando
+  const [currentId, setCurrentId] = useState(null); // ID del mensaje que se está editando
 
   // Función para obtener los mensajes desde el backend
   useEffect(() => {
@@ -24,16 +25,34 @@ const App = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newMessage.title && newMessage.body) {
-      try {
-        const response = await axios.post(
-          "http://localhost:3000/messages",
-          newMessage
-        );
-        setMessages([...messages, response.data]); // Agrega el nuevo mensaje al estado
-        setNewMessage({ title: "", body: "" }); // limpiar el formulario
-      } catch (error) {
-        console.error("Error al agregar el mensaje", error);
+      if (isEditing) {
+        // Solicitud PUT para editar un mensaje existente
+        try {
+          const response = await axios.put(
+            `http://localhost:3000/messages/${currentId}`,
+            newMessage
+          );
+          setMessages(
+            messages.map((msg) => (msg.id === currentId ? response.data : msg))
+          );
+          setIsEditing(false);
+          setCurrentId(null);
+        } catch (error) {
+          console.error("Error al editar el mensaje:", error);
+        }
+      } else {
+        // Solicitud POST para agregar un nuevo mensaje
+        try {
+          const response = await axios.post(
+            "http://localhost:3000/messages",
+            newMessage
+          );
+          setMessages([...messages, response.data]);
+        } catch (error) {
+          console.error("Error al agregar el mensaje:", error);
+        }
       }
+      setNewMessage({ title: "", body: "" });
     }
   };
 
