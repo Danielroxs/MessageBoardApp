@@ -56,6 +56,12 @@ const App = () => {
     }
   };
 
+  const handleEdit = (msg) => {
+    setIsEditing(true);
+    setCurrentId(msg.id);
+    setNewMessage({ title: msg.title, body: msg.body });
+  };
+
   const handleDelete = async (id) => {
     try {
       await axios.delete(`http://localhost:3000/messages/${id}`);
@@ -78,9 +84,12 @@ const App = () => {
           <MessageCard key={msg.id}>
             <h3>{msg.title}</h3>
             <p>{msg.body}</p>
-            <DeleteButton onClick={() => handleDelete(msg.id)}>
-              Eliminar
-            </DeleteButton>
+            <ButtonGroup>
+              <EditButton onClick={() => handleEdit(msg)}>Editar</EditButton>
+              <DeleteButton onClick={() => handleDelete(msg.id)}>
+                Eliminar
+              </DeleteButton>
+            </ButtonGroup>
           </MessageCard>
         ))}
       </MessageList>
@@ -100,7 +109,9 @@ const App = () => {
           placeholder="Escribe aqui tu mensaje"
           required
         />
-        <Button type="submit">Agregar mensaje</Button>
+        <Button type="submit">
+          {isEditing ? "Guardar cambios" : "Agregar mensaje"}
+        </Button>
       </Form>
     </Container>
   );
@@ -136,6 +147,22 @@ const MessageCard = styled.div`
   background-color: #3a3f47;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   position: relative;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+`;
+
+const EditButton = styled.button`
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4caf50;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
 `;
 
 const DeleteButton = styled.button`
