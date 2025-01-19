@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import axios from "axios";
+import Notification from "./Notification";
 
 const App = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState({ title: "", body: "" });
   const [isEditing, setIsEditing] = useState(false); // Estado para saber si estamos editando
   const [currentId, setCurrentId] = useState(null); // ID del mensaje que se está editando
+  const [notification, setNotification] = useState({ message: "", type: "" });
 
   // Función para obtener los mensajes desde el backend
   useEffect(() => {
@@ -22,12 +24,20 @@ const App = () => {
     fetchMessages();
   }, []);
 
+  // Mostrar notificaciones y limpiar el mensaje después de 3 segundos
+  const showNotification = (message, type) => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification({ message: "", type: "" });
+    }, 3000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newMessage.title && newMessage.body) {
-      if (isEditing) {
-        // Solicitud PUT para editar un mensaje existente
-        try {
+      try {
+        if (isEditing) {
+          // Solicitud PUT para editar un mensaje existente
           const response = await axios.put(
             `http://localhost:3000/messages/${currentId}`,
             newMessage
@@ -35,24 +45,22 @@ const App = () => {
           setMessages(
             messages.map((msg) => (msg.id === currentId ? response.data : msg))
           );
+          showNotification("Mensaje editado con éxito", "success");
           setIsEditing(false);
           setCurrentId(null);
-        } catch (error) {
-          console.error("Error al editar el mensaje:", error);
-        }
-      } else {
-        // Solicitud POST para agregar un nuevo mensaje
-        try {
+        } else {
           const response = await axios.post(
             "http://localhost:3000/messages",
             newMessage
           );
           setMessages([...messages, response.data]);
-        } catch (error) {
-          console.error("Error al agregar el mensaje:", error);
+          showNotification("Mensaje agregado con éxito", "success");
         }
+        setNewMessage({ title: "", body: "" });
+      } catch (error) {
+        console.error("Error al agregar o editar el mensaje:", error);
+        showNotification("Ocurrió un error al guardar el mensaje", "error");
       }
-      setNewMessage({ title: "", body: "" });
     }
   };
 
@@ -66,8 +74,10 @@ const App = () => {
     try {
       await axios.delete(`http://localhost:3000/messages/${id}`);
       setMessages(messages.filter((msg) => msg.id !== id)); // Actualiza el estado eliminando el mensaje
+      showNotification("Mensaje eliminado con exito", "success");
     } catch (error) {
       console.error("Error al eliminar el mensaje:", error);
+      showNotification("Ocurrio un error al eliminar el mensaje", "error");
     }
   };
 
@@ -78,6 +88,7 @@ const App = () => {
 
   return (
     <Container>
+      <Notification message={notification.message} type={notification.type} />
       <h1>Message Board App</h1>
       <MessageList>
         {messages.map((msg) => (
