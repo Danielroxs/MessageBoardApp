@@ -9,6 +9,7 @@ const App = () => {
   const [isEditing, setIsEditing] = useState(false); // Estado para saber si estamos editando
   const [currentId, setCurrentId] = useState(null); // ID del mensaje que se está editando
   const [notification, setNotification] = useState({ message: "", type: "" });
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Función para obtener los mensajes desde el backend
   useEffect(() => {
@@ -90,19 +91,33 @@ const App = () => {
     <Container>
       <Notification message={notification.message} type={notification.type} />
       <h1>Message Board App</h1>
+      <SearchInput
+        type="text"
+        placeholder="Buscar mensajes..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
       <MessageList>
-        {messages.map((msg) => (
-          <MessageCard key={msg.id}>
-            <h3>{msg.title}</h3>
-            <p>{msg.body}</p>
-            <ButtonGroup>
-              <EditButton onClick={() => handleEdit(msg)}>Editar</EditButton>
-              <DeleteButton onClick={() => handleDelete(msg.id)}>
-                Eliminar
-              </DeleteButton>
-            </ButtonGroup>
-          </MessageCard>
-        ))}
+        {messages
+          .filter((msg) =>
+            msg.title.toLowerCase().includes(searchTerm.toLocaleLowerCase())
+          )
+          .map((msg) => (
+            <MessageCard key={msg.id}>
+              <h3>{msg.title}</h3>
+              <p>{msg.body}</p>
+              <ButtonGroup>
+                <EditButton onClick={() => handleEdit(msg)}>Editar</EditButton>
+                <DeleteButton onClick={() => handleDelete(msg.id)}>
+                  Eliminar
+                </DeleteButton>
+              </ButtonGroup>
+            </MessageCard>
+          ))}
+
+        {messages.filter((msg) =>
+          msg.title.toLowerCase().includes(searchTerm.toLocaleLowerCase())
+        ).length === 0 && <NoResults>¡No se encontraron resultados!</NoResults>}
       </MessageList>
       <Form onSubmit={handleSubmit}>
         <Input
@@ -150,6 +165,23 @@ const MessageList = styled.div`
   gap: 15px;
   width: 100%;
   max-width: 600px;
+`;
+
+const SearchInput = styled.input`
+  margin-bottom: 20px;
+  padding: 10px;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+`;
+
+const NoResults = styled.div`
+  text-align: center;
+  color: #ff4d4d;
+  font-size: 16px;
+  margin-top: 10px;
 `;
 
 const MessageCard = styled.div`
