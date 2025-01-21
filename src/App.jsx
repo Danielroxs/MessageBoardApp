@@ -84,6 +84,10 @@ const App = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "title" && value.length > 50) return;
+    if (name === "body" && value.length > 280) return;
+
     setNewMessage({ ...newMessage, [name]: value });
   };
 
@@ -91,12 +95,18 @@ const App = () => {
     <Container>
       <Notification message={notification.message} type={notification.type} />
       <h1>Message Board App</h1>
-      <SearchInput
-        type="text"
-        placeholder="Buscar mensajes..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+      <SearchContainer>
+        <SearchInput
+          type="text"
+          placeholder="Buscar mensajes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <ClearButton onClick={() => setSearchTerm("")}>X</ClearButton>
+        )}
+      </SearchContainer>
+
       <MessageList>
         {messages
           .filter((msg) =>
@@ -120,21 +130,33 @@ const App = () => {
         ).length === 0 && <NoResults>¡No se encontraron resultados!</NoResults>}
       </MessageList>
       <Form onSubmit={handleSubmit}>
-        <Input
-          type="text"
-          name="title"
-          value={newMessage.title}
-          onChange={handleChange}
-          placeholder="titulo del mensaje"
-          required
-        />
-        <Textarea
-          name="body"
-          value={newMessage.body}
-          onChange={handleChange}
-          placeholder="Escribe aqui tu mensaje"
-          required
-        />
+        <InputContainer>
+          <Input
+            type="text"
+            name="title"
+            value={newMessage.title}
+            onChange={handleChange}
+            placeholder="titulo del mensaje"
+            required
+          />
+          <CharacterCount error={newMessage.title.length >= 45}>
+            {50 - newMessage.title.length} Caracteres restantes
+          </CharacterCount>
+        </InputContainer>
+
+        <InputContainer>
+          <Textarea
+            name="body"
+            value={newMessage.body}
+            onChange={handleChange}
+            placeholder="Escribe aqui tu mensaje"
+            required
+          />
+          <CharacterCount error={newMessage.body.length >= 260}>
+            {280 - newMessage.body.length} Caracteres restantes
+          </CharacterCount>
+        </InputContainer>
+
         <Button type="submit">
           {isEditing ? "Guardar cambios" : "Agregar mensaje"}
         </Button>
@@ -163,12 +185,13 @@ const MessageList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 15px;
+  margin-bottom: 20px;
   width: 100%;
   max-width: 600px;
 `;
 
 const SearchInput = styled.input`
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   padding: 10px;
   width: 100%;
   max-width: 600px;
@@ -177,19 +200,73 @@ const SearchInput = styled.input`
   font-size: 16px;
 `;
 
+const SearchContainer = styled.div`
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+`;
+
+const InputContainer = styled.div`
+  margin-bottom: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 600px;
+`;
+
+const CharacterCount = styled.div`
+  text-align: right;
+  font-size: 12px;
+  color: ${(props) => (props.error ? "#ff4d4d" : "#888")};
+  margin-top: 5px;
+  position: absolute;
+  bottom: -20px;
+  right: 0;
+  width: 100%;
+`;
+
+const ClearButton = styled.button`
+  position: absolute;
+  top: 20px;
+  right: -10px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px;
+
+  &:hover {
+    color: #ff4d4d;
+  }
+`;
+
 const NoResults = styled.div`
   text-align: center;
   color: #ff4d4d;
   font-size: 16px;
   margin-top: 10px;
+  font-weight: bold;
+  padding: 10px;
+  background-color: #3a3f47;
+  border-radius: 8px;
+  border: 1px solid #ff4d4d;
 `;
 
 const MessageCard = styled.div`
   padding: 15px;
   border-radius: 8px;
+  margin-top: 5px;
   background-color: #3a3f47;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   position: relative;
+  overflow: auto;
+  word-wrap: break-word;
+  max-height: 240px;
 `;
 
 const ButtonGroup = styled.div`
@@ -238,6 +315,8 @@ const Input = styled.input`
   border-radius: 5px;
   border: 1px solid #ccc;
   font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const Textarea = styled.textarea`
@@ -246,6 +325,8 @@ const Textarea = styled.textarea`
   border: 1px solid #ccc;
   font-size: 16px;
   resize: none;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const Button = styled.button`
