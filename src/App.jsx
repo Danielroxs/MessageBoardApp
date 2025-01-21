@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import Notification from "./Notification";
+import { CSSTransition, TransitionGroup } from "react-transition-group";
 
 const App = () => {
   const [messages, setMessages] = useState([]);
@@ -108,22 +109,28 @@ const App = () => {
       </SearchContainer>
 
       <MessageList>
-        {messages
-          .filter((msg) =>
-            msg.title.toLowerCase().includes(searchTerm.toLocaleLowerCase())
-          )
-          .map((msg) => (
-            <MessageCard key={msg.id}>
-              <h3>{msg.title}</h3>
-              <p>{msg.body}</p>
-              <ButtonGroup>
-                <EditButton onClick={() => handleEdit(msg)}>Editar</EditButton>
-                <DeleteButton onClick={() => handleDelete(msg.id)}>
-                  Eliminar
-                </DeleteButton>
-              </ButtonGroup>
-            </MessageCard>
-          ))}
+        <TransitionGroup component={MessageList}>
+          {messages
+            .filter((msg) =>
+              msg.title.toLowerCase().includes(searchTerm.toLocaleLowerCase())
+            )
+            .map((msg) => (
+              <CSSTransition key={msg.id} timeout={300} classNames="message">
+                <MessageCard key={msg.id}>
+                  <h3>{msg.title}</h3>
+                  <p>{msg.body}</p>
+                  <ButtonGroup>
+                    <EditButton onClick={() => handleEdit(msg)}>
+                      Editar
+                    </EditButton>
+                    <DeleteButton onClick={() => handleDelete(msg.id)}>
+                      Eliminar
+                    </DeleteButton>
+                  </ButtonGroup>
+                </MessageCard>
+              </CSSTransition>
+            ))}
+        </TransitionGroup>
 
         {messages.filter((msg) =>
           msg.title.toLowerCase().includes(searchTerm.toLocaleLowerCase())
@@ -343,3 +350,5 @@ const Button = styled.button`
     background-color: #21a1f1;
   }
 `;
+
+import "./App.css";
