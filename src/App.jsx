@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import Notification from "./Notification";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
+import PropTypes from "prop-types";
 
 const App = () => {
   const [messages, setMessages] = useState([]);
@@ -11,6 +12,37 @@ const App = () => {
   const [currentId, setCurrentId] = useState(null); // ID del mensaje que se está editando
   const [notification, setNotification] = useState({ message: "", type: "" });
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1); // Pagina actual
+  const messagesPerPage = 5; // Mensajes por pagina
+  const refs = useRef({});
+
+  const filteredMessages = useMemo(() => {
+    return messages.filter(
+      (msg) =>
+        msg.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        msg.body.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [messages, searchTerm]);
+
+  const currentMessages = useMemo(() => {
+    const indexOfLastMessage = currentPage * messagesPerPage;
+    const indexOfFirstMessage = indexOfLastMessage - messagesPerPage;
+    return filteredMessages.slice(indexOfFirstMessage, indexOfLastMessage);
+  }, [filteredMessages, currentPage, messagesPerPage]);
+
+  const totalPages = Math.ceil(filteredMessages.length / messagesPerPage);
+
+  const MessageCard = React.forwardRef((props, ref) => (
+    <StyledMessageCard ref={ref} {...props}>
+      {props.children}
+    </StyledMessageCard>
+  ));
+
+  MessageCard.propTypes = {
+    children: PropTypes.node.isRequired, // 'children es obligatorio'
+  };
+
+  MessageCard.displayName = "MessageCard";
 
   // Función para obtener los mensajes desde el backend
   useEffect(() => {
@@ -95,7 +127,7 @@ const App = () => {
   return (
     <Container>
       <Notification message={notification.message} type={notification.type} />
-      <h1>Message Board App</h1>
+      <Header>Message Board App</Header>
       <SearchContainer>
         <SearchInput
           type="text"
@@ -110,13 +142,19 @@ const App = () => {
 
       <MessageList>
         <TransitionGroup component={MessageList}>
-          {messages
-            .filter((msg) =>
-              msg.title.toLowerCase().includes(searchTerm.toLocaleLowerCase())
-            )
-            .map((msg) => (
-              <CSSTransition key={msg.id} timeout={300} classNames="message">
-                <MessageCard key={msg.id}>
+          {currentMessages.map((msg) => {
+            if (!refs.current[msg.id]) {
+              refs.current[msg.id] = React.createRef(); // crea una referencia sino existe
+            }
+
+            return (
+              <CSSTransition
+                key={msg.id}
+                nodeRef={refs.current[msg.id]}
+                timeout={300}
+                classNames="message"
+              >
+                <MessageCard ref={refs.current[msg.id]}>
                   <h3>{msg.title}</h3>
                   <p>{msg.body}</p>
                   <ButtonGroup>
@@ -129,13 +167,26 @@ const App = () => {
                   </ButtonGroup>
                 </MessageCard>
               </CSSTransition>
-            ))}
+            );
+          })}
         </TransitionGroup>
-
-        {messages.filter((msg) =>
-          msg.title.toLowerCase().includes(searchTerm.toLocaleLowerCase())
-        ).length === 0 && <NoResults>¡No se encontraron resultados!</NoResults>}
+        {currentMessages.length === 0 && (
+          <NoResults>¡No se encontraron resultados!</NoResults>
+        )}
       </MessageList>
+
+      <Pagination>
+        {[...Array(totalPages)].map((_, index) => (
+          <PageButton
+            key={index}
+            $isActive={index + 1 === currentPage}
+            onClick={() => setCurrentPage(index + 1)}
+          >
+            {index + 1}
+          </PageButton>
+        ))}
+      </Pagination>
+
       <Form onSubmit={handleSubmit}>
         <InputContainer>
           <Input
@@ -146,7 +197,7 @@ const App = () => {
             placeholder="titulo del mensaje"
             required
           />
-          <CharacterCount error={newMessage.title.length >= 45}>
+          <CharacterCount $error={newMessage.title.length >= 45}>
             {50 - newMessage.title.length} Caracteres restantes
           </CharacterCount>
         </InputContainer>
@@ -159,7 +210,7 @@ const App = () => {
             placeholder="Escribe aqui tu mensaje"
             required
           />
-          <CharacterCount error={newMessage.body.length >= 260}>
+          <CharacterCount $error={newMessage.body.length >= 260}>
             {280 - newMessage.body.length} Caracteres restantes
           </CharacterCount>
         </InputContainer>
@@ -183,9 +234,18 @@ const Container = styled.div`
   justify-content: center;
   padding: 20px;
   min-height: 100vh;
-  background-color: #282c34;
+  background: linear-gradient(135deg, #282c34, #3a3f47);
   color: white;
   font-family: "Arial", sans-serif;
+`;
+
+const Header = styled.h1`
+  font-size: 36px;
+  font-weight: bold;
+  color: #61dafb;
+  margin-bottom: 20px;
+  text-align: center;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
 `;
 
 const MessageList = styled.div`
@@ -195,6 +255,49 @@ const MessageList = styled.div`
   margin-bottom: 20px;
   width: 100%;
   max-width: 600px;
+`;
+
+const StyledMessageCard = styled.div`
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 5px;
+  background-color: #3a3f47;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: auto;
+  word-wrap: break-word;
+  max-height: 240px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+`;
+
+const Pagination = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 35px;
+`;
+
+const PageButton = styled.button`
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: ${(props) => (props.$isActive ? "#21a1f1" : "#e0e0e0")};
+  color: ${(props) => (props.$isActive ? "#fff" : "#000")};
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+
+  &:hover {
+    background-color: #21a1f1;
+    color: #fff;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -227,7 +330,7 @@ const InputContainer = styled.div`
 const CharacterCount = styled.div`
   text-align: right;
   font-size: 12px;
-  color: ${(props) => (props.error ? "#ff4d4d" : "#888")};
+  color: ${(props) => (props.$error ? "#ff4d4d" : "#888")};
   margin-top: 5px;
   position: absolute;
   bottom: -20px;
@@ -262,18 +365,6 @@ const NoResults = styled.div`
   background-color: #3a3f47;
   border-radius: 8px;
   border: 1px solid #ff4d4d;
-`;
-
-const MessageCard = styled.div`
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 5px;
-  background-color: #3a3f47;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  position: relative;
-  overflow: auto;
-  word-wrap: break-word;
-  max-height: 240px;
 `;
 
 const ButtonGroup = styled.div`
@@ -345,9 +436,11 @@ const Button = styled.button`
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 
   &:hover {
     background-color: #21a1f1;
+    transform: translateY(-2px);
   }
 `;
 
